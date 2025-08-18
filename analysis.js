@@ -513,6 +513,9 @@ function switchMode(mode) {
         statusText.textContent = 'Full page mode active';
         analyzeBtn.textContent = 'ANALYZE FULL PAGE';
         analyzeBtn.classList.add('active');
+        
+        // Hide parsed content since it's not relevant for full page analysis
+        hideParsedContent();
     } else {
         indicator.style.left = '85%'; // Center under SELECTION
         statusText.textContent = 'Selection mode active - click content to select';
