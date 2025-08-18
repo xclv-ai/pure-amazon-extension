@@ -20,10 +20,24 @@
   background-color: rgba(246, 249, 81, 0.1) !important;
 }
 
+/* Element selection highlight */
+.pokpok-element-selected {
+  outline: 3px solid #f6f951 !important;
+  outline-offset: 2px !important;
+  background-color: rgba(246, 249, 81, 0.1) !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.pokpok-element-selected:hover {
+  outline-color: #f1c7d6 !important;
+  background-color: rgba(246, 249, 81, 0.2) !important;
+}
+
 /* Avoid interfering with page layout */
 .pokpok-highlight,
-.pokpok-selected-text {
-  display: inline !important;
+.pokpok-selected-text,
+.pokpok-element-selected {
   position: relative !important;
-  z-index: 1 !important;
+  z-index: 10 !important;
 }
