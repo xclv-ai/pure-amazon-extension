@@ -157,6 +157,24 @@
             background: #f1c7d6;
         }
         
+        .analyze-button.analyzing {
+            background: #f6f951;
+            color: #04252b;
+            cursor: wait;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .analyze-button.analyzed {
+            background: #f1c7d6;
+            color: #04252b;
+            cursor: pointer;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
         /* Content - Fixed scrolling */
         .extension-content {
             flex: 1;
@@ -1257,7 +1275,7 @@
                 <div class="status-indicator"></div>
                 <span>Connected</span>
             </div>
-            <div class="version-text" id="versionText">POKPOK.AI v2.6.0</div>
+            <div class="version-text" id="versionText">POKPOK.AI v2.7.0</div>
         </div>
     </div>
 

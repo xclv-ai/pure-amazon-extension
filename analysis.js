@@ -76,6 +76,41 @@ function updateToneSliders(analysis) {
     });
 }
 
+// Button state management for analysis feedback
+function setButtonAnalyzing() {
+    const btn = document.getElementById('mainAnalyzeBtn');
+    if (btn) {
+        btn.textContent = 'ANALYZING...';
+        btn.classList.add('analyzing');
+        btn.classList.remove('analyzed');
+    }
+}
+
+function setButtonAnalyzed() {
+    const btn = document.getElementById('mainAnalyzeBtn');
+    if (btn) {
+        btn.textContent = 'ANALYZED';
+        btn.classList.remove('analyzing');
+        btn.classList.add('analyzed');
+        
+        // Auto-collapse parsed content to show updated sliders
+        setParsedContentState('collapsed');
+    }
+}
+
+function resetButtonState() {
+    const btn = document.getElementById('mainAnalyzeBtn');
+    if (btn) {
+        btn.classList.remove('analyzing', 'analyzed');
+        // Restore original text based on current mode
+        if (window.currentMode === 'FULL_PAGE') {
+            btn.textContent = 'ANALYZE FULL PAGE';
+        } else {
+            btn.textContent = 'ANALYZE SELECTION';
+        }
+    }
+}
+
 
 // Card toggle functionality
 function toggleCard(header) {
@@ -223,13 +258,31 @@ async function analyzeSelection() {
         const analysisText = selectedElementData.textContent || 'No text content';
         
         if (analysisText.length > 10) {
+            // Start button animation
+            setButtonAnalyzing();
+            
             // Use the existing analysis functions
             console.log('About to call analyzeText function, typeof analyzeText:', typeof analyzeText);
             if (typeof window.BasicAnalysis !== 'undefined' && window.BasicAnalysis.analyzeText) {
-                const toneAnalysis = await window.BasicAnalysis.analyzeText(analysisText);
-                displayToneAnalysis(toneAnalysis, analysisText);
+                try {
+                    const toneAnalysis = await window.BasicAnalysis.analyzeText(analysisText);
+                    displayToneAnalysis(toneAnalysis, analysisText);
+                    
+                    // Set button to analyzed state and collapse parsed content
+                    setButtonAnalyzed();
+                    
+                    // Reset button after 3 seconds
+                    setTimeout(() => {
+                        resetButtonState();
+                    }, 3000);
+                } catch (error) {
+                    console.error('Analysis failed:', error);
+                    resetButtonState();
+                    alert('Analysis failed. Please try again.');
+                }
             } else {
                 console.error('analyzeText function is not available');
+                resetButtonState();
                 alert('Analysis function not available. Please reload the extension.');
             }
         } else {
@@ -238,6 +291,9 @@ async function analyzeSelection() {
         }
     } else {
         console.log('Analyzing selected text...');
+        
+        // Start button animation
+        setButtonAnalyzing();
         
         // Get selected text from content script
         chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
@@ -248,12 +304,26 @@ async function analyzeSelection() {
                     if (response.success && response.text && response.text.length > 10) {
                         window.BasicAnalysis.analyzeText(response.text).then(analysis => {
                             displayToneAnalysis(analysis, response.text);
+                            
+                            // Set button to analyzed state and collapse parsed content
+                            setButtonAnalyzed();
+                            
+                            // Reset button after 3 seconds
+                            setTimeout(() => {
+                                resetButtonState();
+                            }, 3000);
+                        }).catch(error => {
+                            console.error('Analysis failed:', error);
+                            resetButtonState();
+                            alert('Analysis failed. Please try again.');
                         });
                     } else {
+                        resetButtonState();
                         alert('Please select some text on the page first.');
                     }
                 }).catch(error => {
                     console.error('Failed to get selected text:', error);
+                    resetButtonState();
                     alert('Failed to get selected text. Please try again.');
                 });
             }
