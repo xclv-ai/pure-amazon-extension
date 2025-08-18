@@ -3,22 +3,77 @@
 function displayToneAnalysis(analysis, originalText) {
     console.log('Displaying tone analysis:', analysis);
     
-    // Update sliders using raw percentage scores for positioning
-    if (analysis.rawScores) {
-        Object.keys(analysis.rawScores).forEach(toneName => {
-            const slider = document.querySelector(`[data-tone="${toneName}"]`);
-            if (slider) {
-                slider.value = analysis.rawScores[toneName];
-            }
-        });
+    // Replace popup with slider updates
+    updateToneSliders(analysis);
+    console.log(`Tone analysis completed for: "${originalText.substring(0, 50)}${originalText.length > 50 ? '...' : ''}"`);
+}
+
+// Update tone sliders with analysis results - works with existing UI
+function updateToneSliders(analysis) {
+    console.log('Updating tone sliders with analysis:', analysis);
+    
+    if (!analysis || !analysis.rawScores) {
+        console.warn('No analysis data provided for slider updates');
+        return;
     }
     
-    // Create formatted results display
-    const resultsText = Object.entries(analysis.tones).map(([tone, data]) => {
-        return `${tone}: ${data.scale}/5`;
-    }).join('\n');
+    // Map analysis keys to UI tone titles (exact matches)
+    const toneMapping = {
+        'Formal vs. Casual': 'Formal vs. Casual',
+        'Serious vs. Humorous': 'Serious vs. Funny',
+        'Respectful vs. Irreverent': 'Respectful vs. Irreverent', 
+        'Enthusiastic vs. Matter-of-fact': 'Matter-of-fact vs. Enthusiastic'
+    };
     
-    alert(`Tone Analysis Complete!\n\nAnalyzed: "${originalText.substring(0, 50)}${originalText.length > 50 ? '...' : ''}"\n\nResults:\n${resultsText}`);
+    // Update each tone dimension
+    Object.keys(analysis.rawScores).forEach(analysisKey => {
+        const uiTitle = toneMapping[analysisKey];
+        if (!uiTitle) {
+            console.warn(`No UI mapping found for analysis key: ${analysisKey}`);
+            return;
+        }
+        
+        // Find the tone item by title
+        const toneItems = document.querySelectorAll('.tone-item');
+        let targetItem = null;
+        
+        toneItems.forEach(item => {
+            const titleElement = item.querySelector('.tone-title');
+            if (titleElement && titleElement.textContent.trim() === uiTitle) {
+                targetItem = item;
+            }
+        });
+        
+        if (!targetItem) {
+            console.warn(`Could not find tone item for: ${uiTitle}`);
+            return;
+        }
+        
+        // Get analysis values
+        const rawScore = analysis.rawScores[analysisKey]; // 0-100
+        const toneData = analysis.tones[analysisKey];
+        
+        // Update score (X/5 format)
+        const scoreElement = targetItem.querySelector('.tone-score');
+        if (scoreElement && toneData) {
+            scoreElement.textContent = `${toneData.scale}/5`;
+        }
+        
+        // Update position label
+        const positionElement = targetItem.querySelector('.tone-position');
+        if (positionElement && toneData) {
+            positionElement.textContent = toneData.label;
+        }
+        
+        // Update slider indicator position
+        const indicatorElement = targetItem.querySelector('.slider-indicator');
+        if (indicatorElement) {
+            const leftPercentage = Math.max(0, Math.min(100, rawScore));
+            indicatorElement.style.left = `${leftPercentage}%`;
+        }
+        
+        console.log(`Updated ${uiTitle}: ${rawScore}% → ${toneData ? toneData.scale : '?'}/5`);
+    });
 }
 
 
@@ -327,8 +382,8 @@ function createSliderControls() {
     content.appendChild(slidersDiv);
 }
 
-// Selection mode functionality
-let currentMode = 'FULL_PAGE';
+// Selection mode functionality - globally accessible
+window.currentMode = 'FULL_PAGE';
 let selectedElementData = null; // Track selected element data
 
 // Parsed content state management
@@ -369,7 +424,7 @@ function setParsedContentState(newState) {
 }
 
 function switchMode(mode) {
-    currentMode = mode;
+    window.currentMode = mode;
     selectedElementData = null; // Clear selected element when switching modes
     
     const fullPageBtn = document.getElementById('fullPageMode');
@@ -415,7 +470,7 @@ function handleElementSelection(elementData) {
     const statusText = document.getElementById('statusText');
     const analyzeBtn = document.getElementById('mainAnalyzeBtn');
     
-    if (elementData && currentMode === 'SELECTION') {
+    if (elementData && window.currentMode === 'SELECTION') {
         // Update status to show element is selected
         const elementType = elementData.elementType || 'element';
         const elementTag = elementData.tagName || 'unknown';
@@ -530,199 +585,23 @@ function hideSettings() {
 // Initialize indicator position on load
 function initializeIndicatorPosition() {
     const indicator = document.getElementById('modeIndicator');
-    if (indicator && currentMode === 'FULL_PAGE') {
+    if (indicator && window.currentMode === 'FULL_PAGE') {
         indicator.style.left = '15%'; // Center under FULL PAGE
     }
 }
 
 // POKPOK.AI Analysis Functions
 
-// Initialize when DOM is loaded
+// Initialize when DOM is loaded - delegated to EventHandlers module
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('POKPOK.AI: DOM loaded, initializing...');
+    console.log('POKPOK.AI: DOM loaded, delegating to EventHandlers module...');
     
-    // Set up event listeners for logo animation
-    const logoText = document.querySelector('.logo-text');
-    const triggerButton = document.querySelector('.trigger-button');
-    
-    if (logoText) {
-        logoText.addEventListener('click', () => {
-            if (window.POKPOK && window.POKPOK.triggerLogoAnimation) {
-                window.POKPOK.triggerLogoAnimation();
-            }
-        });
+    // Initialize event handlers through the dedicated module
+    if (window.EventHandlers && window.EventHandlers.initializeEventHandlers) {
+        window.EventHandlers.initializeEventHandlers();
+    } else {
+        console.error('EventHandlers module not available');
     }
-    
-    if (triggerButton) {
-        triggerButton.addEventListener('click', () => {
-            if (window.POKPOK && window.POKPOK.triggerLogoAnimation) {
-                window.POKPOK.triggerLogoAnimation();
-            }
-        });
-    }
-    
-    
-    // Set up card header clicks (but prevent tone controls from triggering card toggle)
-    const cardHeaders = document.querySelectorAll('.card-header');
-    cardHeaders.forEach(header => {
-        header.addEventListener('click', (e) => {
-            // Don't toggle card if clicking on tone controls
-            if (!e.target.classList.contains('tone-controls')) {
-                toggleCard(header);
-            }
-        });
-    });
-    
-    // Set up tone controls
-    const toneControls = document.getElementById('toneControls');
-    if (toneControls) {
-        toneControls.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleToneControls();
-        });
-    }
-    
-    // Set up parsed content toggle
-    const parsedContentContainer = document.getElementById('parsedContentContainer');
-    if (parsedContentContainer) {
-        const sectionHeader = parsedContentContainer.querySelector('.section-header');
-        if (sectionHeader) {
-            sectionHeader.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleParsedContent();
-            });
-            sectionHeader.style.cursor = 'pointer';
-        }
-    }
-    
-    // Set up settings overlay functionality
-    const versionText = document.getElementById('versionText');
-    const settingsOverlay = document.getElementById('settingsOverlay');
-    const settingsHideBtn = document.getElementById('settingsHideBtn');
-    
-    if (versionText && settingsOverlay && settingsHideBtn) {
-        // Show settings when clicking version text
-        versionText.addEventListener('click', () => {
-            showSettings();
-        });
-        
-        // Hide settings when clicking hide button
-        settingsHideBtn.addEventListener('click', () => {
-            hideSettings();
-        });
-    }
-    
-    // Set up popover controls
-    const cancelBtn = document.getElementById('cancelToneControls');
-    const applyBtn = document.getElementById('applyToneControls');
-    
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', () => {
-            document.getElementById('tonePopover').classList.remove('visible');
-        });
-    }
-    
-    if (applyBtn) {
-        applyBtn.addEventListener('click', () => {
-            document.getElementById('tonePopover').classList.remove('visible');
-        });
-    }
-    
-    // Set up tone item clicks
-    const toneItems = document.querySelectorAll('.tone-item');
-    toneItems.forEach(item => {
-        item.addEventListener('click', () => toggleToneItem(item));
-    });
-    
-    // Set up section header clicks
-    const sectionHeaders = document.querySelectorAll('.section-header');
-    sectionHeaders.forEach(header => {
-        header.addEventListener('click', () => toggleSection(header));
-    });
-    
-    // Set up archetype clicks
-    const archetypeItems = document.querySelectorAll('.archetype-item');
-    archetypeItems.forEach(item => {
-        item.addEventListener('click', () => toggleArchetype(item));
-    });
-    
-    // Set up selection mode controls
-    const fullPageBtn = document.getElementById('fullPageMode');
-    const selectionBtn = document.getElementById('selectionMode');
-    const mainAnalyzeBtn = document.getElementById('mainAnalyzeBtn');
-    
-    if (fullPageBtn) {
-        fullPageBtn.addEventListener('click', () => switchMode('FULL_PAGE'));
-    }
-    
-    if (selectionBtn) {
-        selectionBtn.addEventListener('click', () => switchMode('SELECTION'));
-    }
-    
-    if (mainAnalyzeBtn) {
-        mainAnalyzeBtn.addEventListener('click', () => {
-            if (currentMode === 'FULL_PAGE') {
-                analyzePage();
-            } else {
-                analyzeSelection();
-            }
-        });
-    }
-    
-    // Initialize indicator position
-    setTimeout(() => {
-        initializeIndicatorPosition();
-    }, 100);
-    
-    // Listen for element selection messages from content script
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.type === 'ELEMENT_SELECTED') {
-            handleElementSelection(message.element);
-            sendResponse({ success: true });
-        }
-        return true; // Keep message channel open
-    });
-    
-    // Close popover when clicking outside
-    document.addEventListener('click', (e) => {
-        const popover = document.getElementById('tonePopover');
-        const toneControls = document.getElementById('toneControls');
-        
-        if (popover && !popover.contains(e.target) && e.target !== toneControls) {
-            popover.classList.remove('visible');
-        }
-    });
-    
-    // Auto trigger logo animation on load
-    setTimeout(() => {
-        if (window.POKPOK && window.POKPOK.triggerLogoAnimation) {
-            window.POKPOK.triggerLogoAnimation();
-        }
-    }, 1000);
-    
-    // Trigger spectrum animation on load with staggered delays
-    setTimeout(() => {
-        const primarySegment = document.getElementById('primarySegment');
-        const secondarySegment = document.getElementById('secondarySegment');
-        const tertiarySegment = document.getElementById('tertiarySegment');
-        
-        if (primarySegment) {
-            primarySegment.classList.add('animated');
-            setTimeout(() => {
-                if (secondarySegment) {
-                    secondarySegment.classList.add('animated');
-                    setTimeout(() => {
-                        if (tertiarySegment) {
-                            tertiarySegment.classList.add('animated');
-                        }
-                    }, 300);
-                }
-            }, 200);
-        }
-    }, 1500);
-    
-    // Load saved settings on startup
-    loadSettingsOnStartup();
     
     console.log('POKPOK.AI Chrome Extension loaded (Recreated from React version)');
 });
