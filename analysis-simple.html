@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POKPOK.AI - Tone Analysis</title>
+    
+    <style>
+        /* Reset and base styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            background: #f5f3f0;
+            color: #04252b;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .extension-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header */
+        .extension-header {
+            flex: none;
+            background: #04252b;
+            padding: 16px;
+        }
+        
+        .logo-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            color: #f6f951;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+        }
+        
+        .logo-symbol {
+            color: #f6f951;
+            transition: all 0.3s;
+        }
+        
+        .logo-symbol.cycling {
+            color: #f1c7d6;
+            transform: scale(1.1);
+            transition: all 0.075s;
+        }
+        
+        .trigger-button {
+            padding: 8px;
+            background: transparent;
+            border: none;
+            color: #f1c7d6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        
+        /* Selection Module */
+        .selection-module {
+            flex: none;
+            background: white;
+            padding: 16px;
+            border-bottom: 1px solid #e2ddd4;
+        }
+        
+        .mode-selector {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .mode-label {
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+            color: #717182;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: color 0.2s;
+        }
+        
+        .mode-label.active {
+            color: #04252b;
+        }
+        
+        .mode-track {
+            position: relative;
+            height: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .track-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #04252b;
+        }
+        
+        .track-indicator {
+            position: absolute;
+            bottom: 0;
+            width: 1px;
+            height: 12px;
+            background: #04252b;
+            transition: left 0.3s ease-out;
+            left: 0;
+            transform: translateX(-50%);
+        }
+        
+        .selection-status {
+            font-size: 12px;
+            color: #717182;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .analyze-button {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+            background: #e2ddd4;
+            color: #717182;
+            border: none;
+            cursor: not-allowed;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        
+        .analyze-button.active {
+            background: #f6f951;
+            color: #04252b;
+            cursor: pointer;
+        }
+        
+        .analyze-button.active:hover {
+            background: #f1c7d6;
+        }
+        
+        /* Content - Fixed scrolling */
+        .extension-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 20px;
+            min-height: 0; /* Important for flexbox scrolling */
+        }
+        
+        .extension-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .extension-content::-webkit-scrollbar-track {
+            background: #f5f3f0;
+        }
+        
+        .extension-content::-webkit-scrollbar-thumb {
+            background: #d4d4d4;
+            border-radius: 3px;
+        }
+        
+        .extension-content::-webkit-scrollbar-thumb:hover {
+            background: #b0b0b0;
+        }
+        
+        /* Cards */
+        .analysis-card {
+            background: white;
+            border-bottom: 1px dotted #e2ddd4;
+        }
+        
+        .card-header {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+        
+        .card-header.pink {
+            background: #f1c7d6;
+        }
+        
+        .card-header.pink:hover {
+            background: #f0c2d1;
+        }
+        
+        .card-header.teal {
+            background: #1a3a43;
+            color: white;
+        }
+        
+        .card-header.teal:hover {
+            background: #1a3a43dd;
+        }
+        
+        .card-header.collapsed {
+            background: white;
+        }
+        
+        .card-header.collapsed:hover {
+            background: #f6f951;
+        }
+        
+        .card-title {
+            font-size: 20px;
+            font-weight: 400;
+            color: #04252b;
+        }
+        
+        .card-header.teal .card-title {
+            color: white;
+        }
+        
+        .card-subtitle {
+            font-size: 14px;
+            margin-top: 4px;
+            opacity: 0.8;
+            color: #717182;
+        }
+        
+        .card-header.teal .card-subtitle {
+            color: #f6f951;
+        }
+        
+        .bracket {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 300;
+        }
+        
+        .toggle {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 12px;
+            color: #717182;
+            transition: opacity 0.2s;
+        }
+        
+        .card-header.teal .toggle {
+            color: #f6f951;
+        }
+        
+        .card-content {
+            padding: 16px;
+            display: block;
+        }
+        
+        .card-content.hidden {
+            display: none;
+        }
+        
+        /* Tone Analysis Styles */
+        .tone-item {
+            margin-bottom: 24px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            padding: 8px;
+            border-radius: 4px;
+            position: relative;
+        }
+        
+        .tone-item:hover {
+            background: #faf9f7;
+        }
+        
+        .tone-item:hover .tone-details-btn {
+            opacity: 1;
+            background: #f6f951;
+            color: #04252b;
+        }
+        
+        .tone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .tone-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #04252b;
+        }
+        
+        .tone-score {
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            background: #faf9f7;
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid #e2ddd4;
+            color: #04252b;
+        }
+        
+        .tone-header-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            min-height: 20px;
+        }
+        
+        .tone-details-btn {
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            background: transparent;
+            color: transparent;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            pointer-events: none;
+        }
+        
+        .tone-position {
+            font-size: 14px;
+            color: #2d5a5a;
+            margin-bottom: 8px;
+        }
+        
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .slider-background {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: #2d5a5a;
+            bottom: 0;
+        }
+        
+        .slider-indicator {
+            position: absolute;
+            width: 1px;
+            height: 12px;
+            background: #2d5a5a;
+            bottom: 0;
+            transform: translateX(-50%);
+            transition: all 0.5s ease-out;
+        }
+        
+        /* Archetype Spectrum */
+        .spectrum-container {
+            position: relative;
+            height: 48px;
+            background: #e2ddd4;
+            border-radius: 24px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        
+        .spectrum-segment {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #04252b;
+            transition: all 0.7s ease-out;
+            width: 0% !important;
+        }
+        
+        .spectrum-segment.animated {
+            width: var(--target-width) !important;
+        }
+        
+        .segment-yellow { background: #f6f951; }
+        .segment-pink { background: #f1c7d6; }
+        .segment-gray { background: #717182; color: white; }
+        
+        .archetype-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .archetype-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+        
+        .archetype-item:hover {
+            background: #faf9f7;
+        }
+        
+        .archetype-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #04252b;
+        }
+        
+        .archetype-badge.yellow { background: #f6f951; }
+        .archetype-badge.pink { background: #f1c7d6; }
+        .archetype-badge.gray { background: #717182; color: white; }
+        
+        .archetype-info {
+            flex: 1;
+        }
+        
+        .archetype-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #04252b;
+        }
+        
+        .archetype-desc {
+            font-size: 12px;
+            color: #717182;
+        }
+        
+        .archetype-rank {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #717182;
+            background: #faf9f7;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .archetype-rank.primary {
+            background: #f6f951;
+            color: #04252b;
+            font-weight: 500;
+        }
+        
+        /* Section Styles */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 8px 0;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        
+        .section-header:hover .section-toggle.hidden {
+            opacity: 1;
+            background: #f6f951;
+            color: #04252b;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 400;
+            color: #04252b;
+        }
+        
+        .section-toggle {
+            font-size: 12px;
+            color: #717182;
+            background: #f6f951;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: opacity 0.2s;
+        }
+        
+        .section-toggle.hidden {
+            opacity: 0;
+            background: transparent;
+            color: transparent;
+        }
+        
+        .section-content {
+            background: #faf9f7;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+        
+        .section-content.hidden {
+            display: none;
+        }
+        
+        .section-comment {
+            font-size: 12px;
+            color: #717182;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 12px;
+        }
+        
+        .color-palette {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .color-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .color-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #e2ddd4;
+        }
+        
+        .color-hex {
+            font-size: 10px;
+            color: #717182;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            margin: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .btn-primary {
+            background: #f6f951;
+            color: #04252b;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #04252b;
+            border: 1px solid #e2ddd4;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        /* Status Bar */
+        .extension-footer {
+            flex: none;
+            background: white;
+            border-top: 1px solid #e2ddd4;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+        
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+        
+        /* Animation for logo */
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .blink {
+            animation: blink 2s ease-in-out infinite;
+        }
+        
+        /* Tone Controls */
+        .tone-controls {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 12px;
+            color: #717182;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .tone-controls:hover {
+            color: #04252b;
+        }
+        
+        /* Popover styles */
+        .tone-popover {
+            position: fixed;
+            background: white;
+            border: 1px solid #e2ddd4;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            width: 400px;
+            font-family: 'JetBrains Mono', monospace;
+            display: none;
+        }
+        
+        .tone-popover.visible {
+            display: block;
+        }
+        
+        .popover-header {
+            border-bottom: 1px solid #e2ddd4;
+            padding: 12px 16px;
+        }
+        
+        .popover-content {
+            padding: 16px;
+        }
+        
+        .popover-footer {
+            border-top: 1px solid #e2ddd4;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tone-justification {
+            background: #faf9f7;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            border-top: 1px solid #e2ddd4;
+            margin: 8px -8px -8px;
+            display: none;
+        }
+        
+        .tone-justification.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="extension-container">
+        <!-- Header -->
+        <div class="extension-header">
+            <div class="logo-container">
+                <div class="logo-text">
+                    <span>[—</span><span class="logo-symbol" id="logoSymbol">*</span><span>—]</span>
+                    <span> POKPOK.AI</span>
+                </div>
+                <button class="trigger-button" title="Trigger animation">
+                    ✨
+                </button>
+            </div>
+        </div>
+        
+        
+        <!-- Selection Mode Module -->
+        <div class="selection-module">
+            <div class="mode-selector">
+                <button class="mode-label active" id="fullPageMode">FULL PAGE</button>
+                <button class="mode-label" id="selectionMode">SELECTION</button>
+            </div>
+            <div class="mode-track">
+                <div class="track-line"></div>
+                <div class="track-indicator" id="modeIndicator"></div>
+            </div>
+            <div class="selection-status">
+                <span id="statusText">Full page mode active</span>
+            </div>
+            <button class="analyze-button active" id="mainAnalyzeBtn">
+                ANALYZE FULL PAGE
+            </button>
+        </div>
+        
+        <!-- Content -->
+        <div class="extension-content" id="contentArea">
+            <!-- Tone of Voice Analysis Card -->
+            <div class="analysis-card">
+                <div class="card-header pink">
+                    <div class="card-title">
+                        <span class="bracket">[*]</span> Tone of Voice Analysis
+                    </div>
+                    <div class="card-subtitle">Nielsen's 4-Dimensional Framework</div>
+                    <div class="toggle">[-]</div>
+                </div>
+                <div class="card-content">
+                    <div class="tone-item">
+                        <div class="tone-header">
+                            <div class="tone-title">Formal vs. Casual</div>
+                            <div class="tone-score">2/5</div>
+                        </div>
+                        <div class="tone-header-bottom">
+                            <div></div>
+                            <button class="tone-details-btn">details</button>
+                        </div>
+                        <div class="tone-position">Slightly Formal</div>
+                        <div class="slider-container">
+                            <div class="slider-background"></div>
+                            <div class="slider-indicator" style="left: 40%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="tone-item">
+                        <div class="tone-header">
+                            <div class="tone-title">Serious vs. Funny</div>
+                            <div class="tone-score">1/5</div>
+                        </div>
+                        <div class="tone-header-bottom">
+                            <div></div>
+                            <button class="tone-details-btn">details</button>
+                        </div>
+                        <div class="tone-position">Completely Serious</div>
+                        <div class="slider-container">
+                            <div class="slider-background"></div>
+                            <div class="slider-indicator" style="left: 20%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="tone-item">
+                        <div class="tone-header">
+                            <div class="tone-title">Respectful vs. Irreverent</div>
+                            <div class="tone-score">1/5</div>
+                        </div>
+                        <div class="tone-header-bottom">
+                            <div></div>
+                            <button class="tone-details-btn">details</button>
+                        </div>
+                        <div class="tone-position">Deeply Respectful</div>
+                        <div class="slider-container">
+                            <div class="slider-background"></div>
+                            <div class="slider-indicator" style="left: 20%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="tone-item">
+                        <div class="tone-header">
+                            <div class="tone-title">Matter-of-fact vs. Enthusiastic</div>
+                            <div class="tone-score">2/5</div>
+                        </div>
+                        <div class="tone-header-bottom">
+                            <div></div>
+                            <button class="tone-details-btn">details</button>
+                        </div>
+                        <div class="tone-position">Slightly Matter-of-fact</div>
+                        <div class="slider-container">
+                            <div class="slider-background"></div>
+                            <div class="slider-indicator" style="left: 40%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Brand Archetypes Mix Card -->
+            <div class="analysis-card">
+                <div class="card-header teal">
+                    <div class="card-title">
+                        <span class="bracket">[*]</span> Brand Archetypes Mix
+                    </div>
+                    <div class="card-subtitle">Jung's 12 Archetypes Framework</div>
+                    <div class="toggle">[-]</div>
+                </div>
+                <div class="card-content">
+                    <div class="section-comment">// ARCHETYPE_SPECTRUM_ANALYSIS</div>
+                    
+                    <div class="spectrum-container">
+                        <div class="spectrum-segment segment-yellow" id="primarySegment" style="left: 0%; --target-width: 70%;">70%</div>
+                        <div class="spectrum-segment segment-pink" id="secondarySegment" style="left: 70%; --target-width: 15%;">15%</div>
+                        <div class="spectrum-segment segment-gray" id="tertiarySegment" style="left: 85%; --target-width: 15%;">15%</div>
+                    </div>
+                    
+                    <div class="archetype-list">
+                        <div class="archetype-item">
+                            <div class="archetype-badge yellow">70</div>
+                            <div class="archetype-info">
+                                <div class="archetype-name">The Innocent</div>
+                                <div class="archetype-desc">Seeking happiness and simplicity</div>
+                            </div>
+                            <div class="archetype-rank primary">primary</div>
+                        </div>
+                        <div class="archetype-item">
+                            <div class="archetype-badge pink">15</div>
+                            <div class="archetype-info">
+                                <div class="archetype-name">The Caregiver</div>
+                                <div class="archetype-desc">Compassion and service to others</div>
+                            </div>
+                            <div class="archetype-rank">secondary</div>
+                        </div>
+                        <div class="archetype-item">
+                            <div class="archetype-badge gray">15</div>
+                            <div class="archetype-info">
+                                <div class="archetype-name">The Sage</div>
+                                <div class="archetype-desc">Driven by knowledge and truth</div>
+                            </div>
+                            <div class="archetype-rank">tertiary</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Visual Identity Card -->
+            <div class="analysis-card">
+                <div class="card-header pink">
+                    <div class="card-title">
+                        <span class="bracket">[*]</span> Visual Identity
+                    </div>
+                    <div class="card-subtitle">Brand Design & Aesthetic Analysis</div>
+                    <div class="toggle">[-]</div>
+                </div>
+                <div class="card-content">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="bracket">[ ]</span> LOOK & FEEL
+                        </div>
+                        <div class="section-toggle hidden">details</div>
+                    </div>
+                    
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="bracket">[*]</span> PRIMARY PALETTE
+                        </div>
+                        <div class="section-toggle">hide</div>
+                    </div>
+                    <div class="section-content">
+                        <div class="section-comment">// PRIMARY_PALETTE</div>
+                        <div class="color-palette">
+                            <div class="color-item">
+                                <div class="color-circle" style="background: #F6F951;"></div>
+                                <div class="color-hex">#F6F951</div>
+                            </div>
+                            <div class="color-item">
+                                <div class="color-circle" style="background: #FFD700;"></div>
+                                <div class="color-hex">#FFD700</div>
+                            </div>
+                            <div class="color-item">
+                                <div class="color-circle" style="background: #F5DEB3;"></div>
+                                <div class="color-hex">#F5DEB3</div>
+                            </div>
+                            <div class="color-item">
+                                <div class="color-circle" style="background: #D2B48C;"></div>
+                                <div class="color-hex">#D2B48C</div>
+                            </div>
+                            <div class="color-item">
+                                <div class="color-circle" style="background: #8B4513;"></div>
+                                <div class="color-hex">#8B4513</div>
+                            </div>
+                            <div class="color-item">
+                                <div class="color-circle" style="background: #f1c7d6;"></div>
+                                <div class="color-hex">#f1c7d6</div>
+                            </div>
+                        </div>
+                        <p style="font-size: 14px; color: #04252b; line-height: 1.6;">Predominantly warm yellows, beige, gold, and brown tones, often with pink accents for promotional text or specific claims.</p>
+                    </div>
+                    
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="bracket">[ ]</span> DISTINCTIVE ASSETS
+                        </div>
+                        <div class="section-toggle hidden">details</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Brand Insights Card -->
+            <div class="analysis-card">
+                <div class="card-header pink">
+                    <div class="card-title">
+                        <span class="bracket">[*]</span> Brand Insights
+                    </div>
+                    <div class="card-subtitle">Strategic Brand Analysis</div>
+                    <div class="toggle">[-]</div>
+                </div>
+                <div class="card-content">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="bracket">[ ]</span> OVERALL PERCEPTION
+                        </div>
+                        <div class="section-toggle hidden">details</div>
+                    </div>
+                    
+                    <div class="section-header">
+                        <div class="section-title">
+                            <span class="bracket">[ ]</span> COMMUNICATION FOCUS
+                        </div>
+                        <div class="section-toggle hidden">details</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Bar -->
+        <div class="extension-footer">
+            <div class="status-left">
+                <div class="status-indicator"></div>
+                <span>Connected</span>
+            </div>
+            <div>POKPOK.AI v1.58.0</div>
+        </div>
+    </div>
+
+    <!-- Tone Controls Popover -->
+    <div class="tone-popover" id="tonePopover">
+        <div class="popover-header">
+            <div style="font-size: 12px; font-weight: 500; color: #04252b;">
+                [ ] TONETOOLS.CONTROL
+            </div>
+            <div style="font-size: 12px; color: #717182; margin-top: 4px;">
+                /NIELSEN/4DIMENSIONS
+            </div>
+        </div>
+        <div class="popover-content">
+            <div style="font-size: 12px; font-weight: 500; color: #04252b; margin-bottom: 12px;">
+                /PARAMETERS
+            </div>
+            <!-- Slider controls will be inserted here -->
+        </div>
+        <div class="popover-footer">
+            <button style="font-size: 12px; color: #717182; background: none; border: none; cursor: pointer;">
+                [R] Reset
+            </button>
+            <div style="display: flex; gap: 8px;">
+                <button id="cancelToneControls" style="font-size: 12px; padding: 4px 12px; border: 1px solid #e2ddd4; background: white; cursor: pointer;">
+                    Cancel
+                </button>
+                <button id="applyToneControls" style="font-size: 12px; padding: 4px 12px; background: #04252b; color: white; border: none; cursor: pointer;">
+                    Apply
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="analysis.js"></script>
+</body>
+</html>

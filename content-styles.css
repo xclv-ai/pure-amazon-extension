@@ -1,0 +1,29 @@
+/* POKPOK.AI Content Script Styles */
+
+.pokpok-highlight {
+  background-color: rgba(246, 249, 81, 0.4) !important;
+  border-radius: 2px !important;
+  padding: 1px 2px !important;
+  box-shadow: 0 0 0 1px rgba(246, 249, 81, 0.6) !important;
+  transition: all 0.2s ease !important;
+}
+
+.pokpok-highlight:hover {
+  background-color: rgba(246, 249, 81, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(246, 249, 81, 0.8) !important;
+}
+
+/* Selection indicator */
+.pokpok-selected-text {
+  outline: 2px solid #f6f951 !important;
+  outline-offset: 2px !important;
+  background-color: rgba(246, 249, 81, 0.1) !important;
+}
+
+/* Avoid interfering with page layout */
+.pokpok-highlight,
+.pokpok-selected-text {
+  display: inline !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
