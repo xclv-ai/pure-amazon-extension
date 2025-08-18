@@ -699,6 +699,10 @@
             font-family: 'JetBrains Mono', monospace;
         }
         
+        .parsed-content-body.hidden {
+            display: none;
+        }
+        
         .parsed-content-body::-webkit-scrollbar {
             width: 6px;
         }
@@ -741,6 +745,245 @@
         .parsed-metadata-label {
             font-weight: 500;
         }
+        
+        /* Version Text Clickable */
+        .version-text {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .version-text:hover {
+            color: #2d5a5a;
+        }
+        
+        /* Settings Overlay */
+        .settings-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f5f3f0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .settings-overlay.hidden {
+            display: none;
+        }
+        
+        .settings-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        /* Settings Header */
+        .settings-header {
+            flex: none;
+            background: #04252b;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .settings-title {
+            font-size: 18px;
+            color: #f6f951;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+        
+        .settings-hide-btn {
+            padding: 4px 8px;
+            background: #f1c7d6;
+            color: #04252b;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            transition: background-color 0.2s;
+        }
+        
+        .settings-hide-btn:hover {
+            background: #f6f951;
+        }
+        
+        /* Settings Content */
+        .settings-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: white;
+        }
+        
+        .settings-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .settings-content::-webkit-scrollbar-track {
+            background: #f5f3f0;
+        }
+        
+        .settings-content::-webkit-scrollbar-thumb {
+            background: #d4d4d4;
+            border-radius: 3px;
+        }
+        
+        .settings-content::-webkit-scrollbar-thumb:hover {
+            background: #b0b0b0;
+        }
+        
+        /* Settings Form */
+        .settings-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .settings-section {
+            margin-bottom: 32px;
+        }
+        
+        .section-label {
+            font-size: 16px;
+            font-weight: 500;
+            color: #04252b;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #04252b;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 8px;
+        }
+        
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            background: #faf9f7;
+            border: 1px solid #e2ddd4;
+            border-radius: 4px;
+            color: #04252b;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+        
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #2d5a5a;
+            background: white;
+        }
+        
+        .form-input::placeholder {
+            color: #717182;
+        }
+        
+        .form-hint {
+            font-size: 12px;
+            color: #717182;
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 6px;
+        }
+        
+        /* Settings Actions */
+        .settings-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .settings-actions .btn {
+            flex: 1;
+        }
+        
+        /* Security Notice */
+        .security-notice {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #856404;
+        }
+        
+        .notice-icon {
+            flex: none;
+            font-size: 16px;
+        }
+        
+        .notice-text {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.4;
+        }
+        
+        .notice-text strong {
+            font-weight: 500;
+        }
+        
+        /* Settings Loading Indicator */
+        .settings-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .settings-loading.hidden {
+            display: none;
+        }
+        
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2ddd4;
+            border-top: 3px solid #2d5a5a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        .loading-text {
+            font-size: 14px;
+            color: #717182;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Settings form states */
+        .settings-form.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .settings-form.loaded {
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body>
@@ -782,7 +1025,7 @@
             <div class="parsed-content-header">
                 <div class="section-header">
                     <div class="section-title">
-                        <span class="bracket">[*]</span> PARSED CONTENT
+                        <span class="bracket parsed-content-bracket">[*]</span> PARSED CONTENT
                     </div>
                     <div class="section-toggle" id="parsedContentToggle">hide</div>
                 </div>
@@ -1014,7 +1257,79 @@
                 <div class="status-indicator"></div>
                 <span>Connected</span>
             </div>
-            <div>POKPOK.AI v1.71.0</div>
+            <div class="version-text" id="versionText">POKPOK.AI v2.1.1</div>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div class="settings-overlay hidden" id="settingsOverlay">
+        <div class="settings-container">
+            <!-- Settings Header -->
+            <div class="settings-header">
+                <div class="settings-title">
+                    <span class="bracket">[*]</span> SETTINGS
+                </div>
+                <button class="settings-hide-btn" id="settingsHideBtn">hide</button>
+            </div>
+            
+            <!-- Settings Content -->
+            <div class="settings-content">
+                <!-- Settings Loading Indicator -->
+                <div class="settings-loading hidden" id="settingsLoading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Loading saved settings...</div>
+                </div>
+                
+                <form class="settings-form" id="settingsForm">
+                    <!-- Gemini API Section -->
+                    <div class="settings-section">
+                        <div class="section-label">
+                            <span class="bracket">[ ]</span> GEMINI API CONFIGURATION
+                        </div>
+                        <div class="form-group">
+                            <label for="apiKey" class="form-label">API Key</label>
+                            <input type="password" id="apiKey" class="form-input" placeholder="Enter your Gemini API key">
+                            <div class="form-hint">API keys are encrypted and stored locally. Consider using dedicated extension keys.</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="modelSelect" class="form-label">Model Selection</label>
+                            <select id="modelSelect" class="form-select">
+                                <option value="gemini-2.5-pro">Gemini 2.5 PRO</option>
+                                <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
+                                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Supabase Section -->
+                    <div class="settings-section">
+                        <div class="section-label">
+                            <span class="bracket">[ ]</span> SUPABASE DATABASE
+                        </div>
+                        <div class="form-group">
+                            <label for="supabaseDb" class="form-label">Database Name</label>
+                            <input type="text" id="supabaseDb" class="form-input" placeholder="Enter Supabase database name">
+                            <div class="form-hint">Database configuration for archetype analysis storage.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="settings-actions">
+                        <button type="button" class="btn btn-secondary" id="testConnectionBtn">Check Connection</button>
+                        <button type="submit" class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+                    </div>
+                    
+                    <!-- Security Notice -->
+                    <div class="security-notice">
+                        <div class="notice-icon">⚠️</div>
+                        <div class="notice-text">
+                            <strong>Security Notice:</strong> API keys are encrypted but stored locally in browser storage. 
+                            For maximum security, use dedicated API keys for browser extensions only.
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -1052,6 +1367,7 @@
     <script src="lib/compromise.min.js"></script>
     <!-- Modular JavaScript Architecture -->
     <script src="js/chrome-api.js"></script>
+    <script src="js/Settings.js"></script>
     <script src="js/AnimatedLogo.js"></script>
     <script src="js/StatusBar.js"></script>
     <script src="js/Navigation.js"></script>

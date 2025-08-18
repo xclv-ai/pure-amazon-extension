@@ -222,6 +222,65 @@ This project includes components from:
 - [shadcn/ui](https://ui.shadcn.com/) - MIT License
 - [Unsplash](https://unsplash.com) photos - Unsplash License
 
+## 🏗️ JavaScript Architecture
+
+### Module Loading Order (analysis-simple.html)
+```javascript
+1. lib/compromise.min.js          // NLP library
+2. js/chrome-api.js               // Chrome extension API wrapper
+3. js/Settings.js                 // Settings form management
+4. js/AnimatedLogo.js             // Logo animation system
+5. js/StatusBar.js                // Connection status display
+6. js/Navigation.js               // Tab navigation handling
+7. js/ContentAnalysisSwitch.js    // Analysis toggle switch
+8. js/ToneAnalysisDisplay.js      // Tone slider displays
+9. js/CompromiseDemo.js           // Text analysis buttons
+10. js/BrandAnalysisCards.js      // Static UI content
+11. analysis.js                   // Main application logic
+```
+
+### Trigger Flow Analysis
+
+**🔄 Auto-Initialized Modules (Self-Starting):**
+- `HTML loads` → `chrome-api.js` → Creates `window.POKPOK` object + Chrome API wrappers
+- `HTML loads` → `AnimatedLogo.js` → `init()` → Exports `window.POKPOK.triggerLogoAnimation`
+- `HTML loads` → `StatusBar.js` → `init()` → Exports `window.POKPOK.setStatus` + `showStatusMessage`
+- `HTML loads` → `Navigation.js` → `init()` → Exports `window.POKPOK.switchTab`
+- `HTML loads` → `ContentAnalysisSwitch.js` → `init()` → Handles analysis toggle events
+- `HTML loads` → `ToneAnalysisDisplay.js` → `init()` → Exports `window.POKPOK.updateToneAnalysis`
+- `HTML loads` → `CompromiseDemo.js` → `init()` → Exports `window.POKPOK.runTextAnalysis`
+- `HTML loads` → `BrandAnalysisCards.js` → Creates static UI immediately
+- `HTML loads` → `Settings.js` → Creates `window.Settings` module (manual init required)
+
+**🎯 Cross-Module Triggers:**
+- `Navigation.js` triggers `AnimatedLogo.js` → `window.POKPOK.triggerLogoAnimation()` → Logo animation on tab switch
+- `ToneAnalysisDisplay.js` triggers `chrome-api.js` → `window.POKPOK.getPageContent()` → Page content analysis
+- `ToneAnalysisDisplay.js` triggers `chrome-api.js` → `window.POKPOK.analyzeSelection()` → Text selection analysis
+- `Settings.js` triggers `chrome-api.js` → `window.POKPOK.storage` → Settings persistence
+- `analysis.js` triggers `chrome-api.js` → `window.POKPOK.storage.loadSettings()` → Settings loading
+
+**⚠️ Orphaned Files (Dead Code):**
+- `js/RealContentAnalyzer.js` → Has `init()` but NOT loaded in HTML → **UNUSED**
+
+**📋 Main Controller:**
+- `analysis.js` → Main application coordinator (1518 lines) → Uses chrome-api.js for storage
+
+### File Functions Summary
+
+| File | Purpose | Exports | Size | Status |
+|------|---------|---------|------|---------|
+| `chrome-api.js` | Chrome extension API wrapper | `window.POKPOK` object | Small | ✅ Active |
+| `Settings.js` | Form management & validation | `window.Settings` | Medium | ✅ Active |
+| `AnimatedLogo.js` | Logo symbol cycling animation | `triggerLogoAnimation` | Medium | ✅ Active |
+| `StatusBar.js` | Connection status display | `setStatus`, `showStatusMessage` | Small | ✅ Active |
+| `Navigation.js` | Tab switching system | `switchTab` | Small | ✅ Active |
+| `ContentAnalysisSwitch.js` | Analysis toggle handling | None (internal) | Small | ✅ Active |
+| `ToneAnalysisDisplay.js` | Tone slider management | `updateToneAnalysis` | Large | ✅ Active |
+| `CompromiseDemo.js` | Text analysis controls | `runTextAnalysis` | Large | ✅ Active |
+| `BrandAnalysisCards.js` | Static UI generation | None (immediate) | Medium | ✅ Active |
+| `RealContentAnalyzer.js` | Content analysis handler | None | Medium | ❌ Dead Code |
+| `analysis.js` | Main application logic | Global functions | XL (1518 lines) | ✅ Active |
+
 ## 🔄 Version History
 
 - **v1.60.0** (Current): Enhanced analysis capabilities and improved UI
