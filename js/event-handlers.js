@@ -1,5 +1,47 @@
-// event-handlers.js - DOM event binding and initialization logic
-// All event listeners and DOM setup for the extension interface
+/**
+ * POKPOK.AI Chrome Extension v2.25.0
+ * File: js/event-handlers.js
+ * Purpose: DOM event binding system and user interaction management
+ * 
+ * Key Features:
+ * - Complete DOM event listener setup for extension interface
+ * - Tone item click handling (click-to-show justifications)
+ * - Brand archetype click handling (expandable content)
+ * - Analysis button click management
+ * - Mode switching between FULL_PAGE and SELECTION
+ * - Settings overlay controls
+ * 
+ * Dependencies:
+ * - analysis.js: Functions like toggleArchetype(), toggleToneItem()
+ * - All UI modules that provide interactive functionality
+ * 
+ * Exposes:
+ * - window.EventHandlers.initializeEventHandlers() - Main initialization function
+ * 
+ * Event Handlers Managed:
+ * - .tone-item click events → toggleToneItem() for dynamic justifications
+ * - .archetype-item click events → toggleArchetype() for expandable content
+ * - .section-header click events → toggleSection() for collapsible sections
+ * - #mainAnalyzeBtn click → analysis execution
+ * - Mode switching buttons (FULL_PAGE, SELECTION)
+ * - Settings overlay show/hide controls
+ * 
+ * Integration Points:
+ * - analysis.js: Core analysis functions and UI updates
+ * - Settings.js: Settings panel management
+ * - Navigation.js: Tab switching functionality
+ * - All interactive UI components
+ * 
+ * Initialization Flow:
+ * 1. Set up tone item click listeners for justification system
+ * 2. Set up archetype item click listeners for expandable content
+ * 3. Set up section header toggling
+ * 4. Set up analysis mode switching
+ * 5. Set up main analysis button
+ * 6. Set up settings controls
+ * 
+ * Last Updated: August 2024
+ */
 
 (function() {
     function init() {

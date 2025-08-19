@@ -1,4 +1,37 @@
-// POKPOK.AI Content Script - Injected into web pages
+/**
+ * POKPOK.AI Chrome Extension v2.28.0
+ * File: content-script.js
+ * Purpose: Content script for webpage interaction and content extraction
+ * 
+ * Key Features:
+ * - Page content extraction for analysis
+ * - Element selection and interaction
+ * - Error handling and debugging
+ * - Communication with extension side panel
+ * 
+ * Injection Context:
+ * - Runs in isolated world (separate from page scripts)
+ * - Injected into all web pages (all URLs)
+ * - Runs at document_idle for stable DOM access
+ * 
+ * Functionality:
+ * - Element selection for targeted analysis
+ * - Text content extraction and processing
+ * - Page metadata collection
+ * - Visual identity color extraction
+ * 
+ * Chrome APIs Used:
+ * - chrome.runtime: Communication with extension
+ * - Document API: DOM manipulation and content access
+ * - Window events: Error handling and debugging
+ * 
+ * Integration Points:
+ * - analysis.js: Receives extracted content for analysis
+ * - Side panel: Displays analysis results
+ * - GeminiAnalysisService.js: Provides content for API analysis
+ * 
+ * Last Updated: August 2024
+ */
 
 // Install error handlers IMMEDIATELY before any other code
 (function installErrorHandlers() {
@@ -333,15 +366,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
       
     case 'SET_MODE':
-      extensionMode = message.mode;
-      console.log('POKPOK.AI mode changed to:', extensionMode);
-      
-      // Clear element selection when switching away from SELECTION mode
-      if (extensionMode !== 'SELECTION') {
-        clearElementSelection();
+      try {
+        console.log('SET_MODE message received:', message.mode);
+        extensionMode = message.mode;
+        console.log('POKPOK.AI mode changed to:', extensionMode);
+        
+        // Clear element selection when switching away from SELECTION mode
+        if (extensionMode !== 'SELECTION') {
+          clearElementSelection();
+        }
+        
+        sendResponse({ success: true, mode: extensionMode });
+        console.log('SET_MODE response sent successfully');
+      } catch (error) {
+        console.error('SET_MODE error:', error);
+        sendResponse({ success: false, error: error.message });
       }
-      
-      sendResponse({ success: true, mode: extensionMode });
       break;
       
     case 'HIGHLIGHT_TEXT':
@@ -357,6 +397,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'CLEAR_ELEMENT_SELECTION':
       clearElementSelection();
       sendResponse({ success: true });
+      break;
+      
+    case 'GET_FULL_PAGE_TEXT':
+      try {
+        const fullPageText = extractFullPageText();
+        sendResponse({ success: true, text: fullPageText });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+      break;
+      
+    case 'GET_PAGE_COLORS':
+      try {
+        console.log('GET_PAGE_COLORS message received');
+        const pageColors = extractPageColors();
+        console.log('extractPageColors completed:', pageColors);
+        sendResponse({ success: true, colors: pageColors });
+      } catch (error) {
+        console.error('GET_PAGE_COLORS error:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+      break;
+      
+    case 'PING':
+      // Health check for content script availability
+      sendResponse({ success: true, status: 'Content script is alive' });
       break;
       
     default:
@@ -433,6 +499,235 @@ function removeHighlights() {
     parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
     parent.normalize(); // Merge adjacent text nodes
   });
+}
+
+// Extract full page text for analysis
+function extractFullPageText() {
+  console.log('Extracting full page text content...');
+  
+  // Get main content areas, prioritizing semantic elements
+  const contentSelectors = [
+    'main',
+    'article', 
+    '[role="main"]',
+    '.main-content',
+    '.content',
+    '.article-content',
+    '.post-content',
+    '.page-content'
+  ];
+  
+  let mainContent = null;
+  for (const selector of contentSelectors) {
+    mainContent = document.querySelector(selector);
+    if (mainContent) break;
+  }
+  
+  // If no main content found, use body but filter out nav/footer
+  if (!mainContent) {
+    mainContent = document.body;
+  }
+  
+  // Extract text from various elements
+  const textElements = mainContent.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, td, th, dt, dd');
+  const textContent = [];
+  
+  textElements.forEach(element => {
+    // Skip elements in navigation, footer, sidebar, ads
+    const parentClasses = element.closest('nav, footer, aside, .nav, .footer, .sidebar, .ad, .advertisement, .cookie, .modal, .popup, .overlay');
+    if (parentClasses) return;
+    
+    const text = element.textContent?.trim();
+    if (text && text.length > 10) {
+      textContent.push(text);
+    }
+  });
+  
+  // Add page title and meta description for context
+  const titleText = document.title ? `Title: ${document.title}` : '';
+  const metaDesc = document.querySelector('meta[name="description"]')?.content;
+  const descText = metaDesc ? `Description: ${metaDesc}` : '';
+  
+  const fullText = [titleText, descText, ...textContent].filter(Boolean).join('\n\n');
+  
+  console.log(`Extracted ${fullText.length} characters of text content`);
+  return fullText;
+}
+
+// Extract CSS colors from page elements  
+function extractPageColors() {
+  console.log('Extracting CSS colors from page elements...');
+  
+  try {
+    const colorSamples = [];
+    const colorFrequency = {};
+    
+    // Get all elements in the document
+    const elements = document.querySelectorAll('*');
+    console.log(`Found ${elements.length} elements to analyze`);
+    
+    // Filter to visible elements only
+    const visibleElements = Array.from(elements).filter(el => {
+      try {
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        
+        return rect.width > 10 && rect.height > 10 && 
+               rect.top < window.innerHeight && rect.bottom > 0 && 
+               rect.left < window.innerWidth && rect.right > 0 &&
+               style.visibility !== 'hidden' && style.display !== 'none';
+      } catch (error) {
+        console.warn('Error filtering element:', error);
+        return false;
+      }
+    });
+  
+    console.log(`Analyzing ${visibleElements.length} visible elements`);
+    
+    // Extract colors from visible elements
+    visibleElements.forEach(element => {
+      try {
+        const style = window.getComputedStyle(element);
+        
+        // Extract background color
+        if (style.backgroundColor && 
+            style.backgroundColor !== 'rgba(0, 0, 0, 0)' && 
+            style.backgroundColor !== 'transparent') {
+          const color = normalizeColor(style.backgroundColor);
+          if (color) {
+            colorSamples.push(color);
+            colorFrequency[color] = (colorFrequency[color] || 0) + 1;
+          }
+        }
+        
+        // Extract text color (with priority for headings and links)
+        if (style.color && style.color !== 'rgba(0, 0, 0, 0)') {
+          const color = normalizeColor(style.color);
+          if (color) {
+            colorSamples.push(color);
+            // Give extra weight to headings and links for accent colors
+            const isImportant = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'A'].includes(element.tagName);
+            const weight = isImportant ? 3 : 1;
+            colorFrequency[color] = (colorFrequency[color] || 0) + weight;
+          }
+        }
+        
+        // Extract border colors
+        ['borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach(prop => {
+          try {
+            if (style[prop] && 
+                style[prop] !== 'rgba(0, 0, 0, 0)' && 
+                style[prop] !== 'transparent' &&
+                (style.borderTopWidth !== '0px' || style.borderRightWidth !== '0px' || 
+                 style.borderBottomWidth !== '0px' || style.borderLeftWidth !== '0px')) {
+              const color = normalizeColor(style[prop]);
+              if (color) {
+                colorSamples.push(color);
+                colorFrequency[color] = (colorFrequency[color] || 0) + 1;
+              }
+            }
+          } catch (borderError) {
+            console.warn('Error extracting border color:', borderError);
+          }
+        });
+      } catch (elementError) {
+        console.warn('Error processing element:', elementError);
+      }
+    });
+    
+    // Sort colors by frequency  
+    const sortedColors = Object.keys(colorFrequency)
+      .sort((a, b) => colorFrequency[b] - colorFrequency[a]);
+    
+    // Ensure white and black are prioritized if they exist, but don't duplicate
+    const prioritizedColors = [];
+    
+    // Add white first if it exists (common background)
+    if (colorSamples.some(c => c === '#FFFFFF') && !prioritizedColors.includes('#FFFFFF')) {
+      prioritizedColors.push('#FFFFFF');
+    }
+    
+    // Add black if it exists (common text color)  
+    if (colorSamples.some(c => c === '#000000') && !prioritizedColors.includes('#000000')) {
+      prioritizedColors.push('#000000');
+    }
+    
+    // Add other colors in frequency order, avoiding duplicates
+    sortedColors.forEach(color => {
+      if (!prioritizedColors.includes(color)) {
+        prioritizedColors.push(color);
+      }
+    });
+    
+    // Return only the unique colors we found (don't force to 6)
+    const finalColors = prioritizedColors.slice(0, Math.min(prioritizedColors.length, 6));
+    
+    console.log(`Extracted ${finalColors.length} unique colors:`, finalColors);
+    console.log('Color frequency:', colorFrequency);
+    
+    return finalColors;
+    
+  } catch (error) {
+    console.error('Error in extractPageColors:', error);
+    return ['#FFFFFF', '#000000', '#808080']; // Fallback colors
+  }
+}
+
+// Normalize CSS color to hex format
+function normalizeColor(cssColor) {
+  try {
+    if (!cssColor) return null;
+    
+    // Handle rgba/rgb format
+    const rgbMatch = cssColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+    if (rgbMatch) {
+      const r = parseInt(rgbMatch[1]);
+      const g = parseInt(rgbMatch[2]); 
+      const b = parseInt(rgbMatch[3]);
+      return rgbToHex(r, g, b);
+    }
+    
+    // Handle hex format (already normalized)
+    if (cssColor.startsWith('#')) {
+      const hex = cssColor.slice(1);
+      if (hex.length === 3) {
+        // Convert 3-digit hex to 6-digit
+        return '#' + hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+      } else if (hex.length === 6) {
+        return cssColor.toUpperCase();
+      }
+    }
+    
+    // Handle named colors - basic set
+    const namedColors = {
+      'red': '#FF0000',
+      'green': '#008000', 
+      'blue': '#0000FF',
+      'white': '#FFFFFF',
+      'black': '#000000',
+      'gray': '#808080',
+      'grey': '#808080',
+      'yellow': '#FFFF00',
+      'orange': '#FFA500',
+      'purple': '#800080',
+      'pink': '#FFC0CB'
+    };
+    
+    return namedColors[cssColor.toLowerCase()] || null;
+  } catch (error) {
+    console.warn('Error normalizing color:', cssColor, error);
+    return null;
+  }
+}
+
+// Convert RGB values to hex
+function rgbToHex(r, g, b) {
+  try {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+  } catch (error) {
+    console.warn('Error converting RGB to hex:', r, g, b, error);
+    return '#000000';
+  }
 }
 
 // Initialize content script

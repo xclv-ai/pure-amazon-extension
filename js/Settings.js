@@ -1,162 +1,128 @@
-// Settings.js - Settings management module
-// Handles form management, validation, and settings persistence
+/**
+ * POKPOK.AI Chrome Extension v2.39.0
+ * File: js/Settings.js
+ * Purpose: Settings orchestrator and state management system
+ * 
+ * v2.39.0 NOTES: This module's migration function was working correctly.
+ * The brand persistence bug was actually in SettingsManager.js validation logic.
+ * 
+ * Key Features:
+ * - Central settings coordination between multiple tab modules
+ * - Chrome storage integration with encrypted API key storage
+ * - Settings validation and error handling
+ * - Unified settings state management
+ * 
+ * Dependencies:
+ * - js/SettingsTabs.js: Tab navigation system
+ * - js/ApiSettings.js: Gemini API configuration
+ * - js/AnalysisSettings.js: Analysis engine settings
+ * - js/WhiteLabelSettings.js: Brand customization
+ * - Chrome storage API: Persistent settings storage
+ * 
+ * Exposes:
+ * - window.Settings.init() - Initialize settings system
+ * - window.Settings.save() - Save all settings to storage
+ * - window.Settings.load() - Load settings from storage
+ * 
+ * Settings Structure:
+ * - apiKey: Encrypted Gemini API key
+ * - selectedModel: AI model selection (gemini-2.5-pro, flash, etc.)
+ * - analysisEngine: Local vs Cloud AI preference
+ * - whiteLabel: Brand customization options
+ * 
+ * Integration Points:
+ * - GeminiAnalysisService.js: API configuration
+ * - analysis.js: Settings-dependent functionality
+ * - UI components: Settings-driven behavior
+ * 
+ * Last Updated: August 2024
+ */
 
 window.Settings = (function() {
     'use strict';
 
-    // Settings form elements
-    let formElements = null;
+    // State
+    let initialized = false;
     let loadingIndicator = null;
 
-    // Initialize settings module
+    // Initialize settings module as orchestrator
     function initialize() {
-        // Get form elements
-        formElements = {
-            form: document.getElementById('settingsForm'),
-            apiKey: document.getElementById('apiKey'),
-            modelSelect: document.getElementById('modelSelect'),
-            supabaseDb: document.getElementById('supabaseDb'),
-            testConnectionBtn: document.getElementById('testConnectionBtn'),
-            saveSettingsBtn: document.getElementById('saveSettingsBtn')
-        };
-
+        if (initialized) return;
+        
         // Get loading indicator
         loadingIndicator = document.getElementById('settingsLoading');
-
-        // Set up event listeners
-        if (formElements.form) {
-            formElements.form.addEventListener('submit', handleFormSubmit);
-        }
-
-        if (formElements.testConnectionBtn) {
-            formElements.testConnectionBtn.addEventListener('click', handleTestConnection);
-        }
-
-        console.log('Settings module initialized');
-    }
-
-    // Handle form submission
-    async function handleFormSubmit(event) {
-        event.preventDefault();
         
-        const apiKey = formElements.apiKey.value.trim();
-        const model = formElements.modelSelect.value;
-        const supabaseDb = formElements.supabaseDb.value.trim();
-
-        // Validate inputs
-        if (!apiKey) {
-            showNotification('Please enter a Gemini API key', 'error');
-            return;
+        // Initialize tab system first
+        if (window.SettingsTabs && typeof window.SettingsTabs.initialize === 'function') {
+            window.SettingsTabs.initialize();
         }
-
-        if (!model) {
-            showNotification('Please select a model', 'error');
-            return;
-        }
-
-        try {
-            // Save settings securely
-            await saveSettings({
-                apiKey: apiKey,
-                model: model,
-                supabaseDb: supabaseDb
-            });
-
-            showNotification('Settings saved successfully!', 'success');
-        } catch (error) {
-            console.error('Failed to save settings:', error);
-            showNotification('Failed to save settings. Please try again.', 'error');
-        }
-    }
-
-    // Handle test connection
-    async function handleTestConnection() {
-        const apiKey = formElements.apiKey.value.trim();
-        const model = formElements.modelSelect.value;
-
-        if (!apiKey) {
-            showNotification('Please enter an API key first', 'error');
-            return;
-        }
-
-        // Disable button during test
-        const originalText = formElements.testConnectionBtn.textContent;
-        formElements.testConnectionBtn.textContent = 'Testing...';
-        formElements.testConnectionBtn.disabled = true;
-
-        try {
-            const isConnected = await testGeminiConnection(apiKey, model);
+        
+        // Initialize individual tab modules
+        setTimeout(() => {
+            if (window.ApiSettings && typeof window.ApiSettings.initialize === 'function') {
+                window.ApiSettings.initialize();
+            }
             
-            if (isConnected) {
-                showNotification('Connection successful!', 'success');
-            } else {
-                showNotification('Connection failed. Please check your API key and try again.', 'error');
+            if (window.WhiteLabelSettings && typeof window.WhiteLabelSettings.initialize === 'function') {
+                window.WhiteLabelSettings.initialize();
             }
-        } catch (error) {
-            console.error('Connection test error:', error);
-            showNotification('Connection test failed: ' + error.message, 'error');
-        } finally {
-            // Re-enable button
-            formElements.testConnectionBtn.textContent = originalText;
-            formElements.testConnectionBtn.disabled = false;
-        }
-    }
-
-    // Test Gemini API connection
-    async function testGeminiConnection(apiKey, model) {
-        const apiUrl = getGeminiApiUrl(model);
+            
+            if (window.AnalysisSettings && typeof window.AnalysisSettings.initialize === 'function') {
+                window.AnalysisSettings.initialize();
+            }
+        }, 100);
         
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': apiKey
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: "Hello, this is a connection test. Please respond with 'OK' if you receive this message."
-                        }]
-                    }]
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return data && data.candidates && data.candidates.length > 0;
-            } else {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-        } catch (error) {
-            console.error('Gemini API test failed:', error);
-            throw error;
-        }
+        // Set up global event listeners
+        setupGlobalEventListeners();
+        
+        // Load initial settings
+        loadSettings();
+        
+        initialized = true;
+        console.log('Settings orchestrator initialized');
+    }
+    
+    // Set up global event listeners
+    function setupGlobalEventListeners() {
+        // Listen for brand changes
+        document.addEventListener('brandChange', (event) => {
+            console.log('Brand changed to:', event.detail.brand);
+        });
+        
+        // Listen for engine changes
+        document.addEventListener('analysisEngineChange', (event) => {
+            console.log('Analysis engine changed to:', event.detail.engine);
+        });
+        
+        // Listen for API settings changes
+        document.addEventListener('apiSettingsSaved', (event) => {
+            console.log('API settings saved');
+        });
     }
 
-    // Get Gemini API URL for model
-    function getGeminiApiUrl(model) {
-        const baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
-        return `${baseUrl}/${model}:generateContent`;
-    }
 
-    // Save settings securely
+    // Centralized settings save (delegates to specific modules)
     async function saveSettings(settings) {
         if (typeof window.POKPOK === 'undefined' || !window.POKPOK.storage) {
             throw new Error('Chrome storage API not available');
         }
 
         await window.POKPOK.storage.saveSettings(settings);
+        
+        // Notify all modules about settings change
+        const settingsChangeEvent = new CustomEvent('settingsChanged', {
+            detail: { settings: settings }
+        });
+        document.dispatchEvent(settingsChangeEvent);
     }
 
-    // Load settings from storage with enhanced reliability
+    // Centralized settings load (coordinates all modules)
     async function loadSettings() {
         return await ensureSettingsLoaded();
     }
 
     // Enhanced settings loading with retry mechanism
     async function ensureSettingsLoaded(maxRetries = 3) {
-        // Show loading indicator
         showLoadingIndicator();
         
         try {
@@ -164,139 +130,95 @@ window.Settings = (function() {
                 try {
                     console.log(`Settings load attempt ${attempt}/${maxRetries}`);
                     
-                    // Check if POKPOK API is available
                     if (typeof window.POKPOK === 'undefined' || !window.POKPOK.storage) {
                         if (attempt < maxRetries) {
-                            console.warn(`Chrome storage API not available on attempt ${attempt}, retrying...`);
-                            await delay(500 * attempt); // Progressive delay
+                            await delay(500 * attempt);
                             continue;
                         } else {
-                            throw new Error('Chrome storage API not available after all retries');
+                            throw new Error('Chrome storage API not available');
                         }
                     }
 
-                    // Load settings from storage
                     const settings = await window.POKPOK.storage.loadSettings();
                     
                     if (settings) {
-                        // Validate and migrate settings if needed
                         const validatedSettings = await validateAndMigrateSettings(settings);
+                        console.log('Settings loaded successfully');
                         
-                        // Populate form fields
-                        const success = autoPopulateFields(validatedSettings);
+                        // Notify all modules
+                        const settingsLoadedEvent = new CustomEvent('settingsLoaded', {
+                            detail: { settings: validatedSettings }
+                        });
+                        document.dispatchEvent(settingsLoadedEvent);
                         
-                        if (success) {
-                            console.log('Settings loaded and populated successfully:', {
-                                hasApiKey: !!validatedSettings.apiKey,
-                                model: validatedSettings.model,
-                                supabaseDb: validatedSettings.supabaseDb
-                            });
-                            
-                            showSettingsLoadedIndicator();
-                            return validatedSettings;
-                        } else if (attempt < maxRetries) {
-                            console.warn(`Field population failed on attempt ${attempt}, retrying...`);
-                            await delay(300 * attempt);
-                            continue;
-                        }
-                    } else if (attempt === 1) {
-                        console.log('No saved settings found');
-                        return null;
+                        return validatedSettings;
                     }
+                    return null;
 
                 } catch (error) {
                     console.error(`Settings load attempt ${attempt} failed:`, error);
-                    
                     if (attempt === maxRetries) {
-                        showNotification('Failed to load saved settings. Please re-enter your configuration.', 'error');
                         throw error;
                     }
-                    
                     await delay(500 * attempt);
                 }
             }
-            
             return null;
-            
         } finally {
-            // Always hide loading indicator
             hideLoadingIndicator();
         }
     }
 
-    // Validate and migrate settings for version compatibility
+    // Validate and migrate settings
     async function validateAndMigrateSettings(settings) {
-        const currentVersion = '1.0';
+        const currentVersion = '2.13.0';
         const settingsVersion = settings.version || '1.0';
+        
+        console.log('🔧 validateAndMigrateSettings called with:', settings);
+        console.log('🔧 Input settings keys:', Object.keys(settings));
+        console.log('🔧 Input whiteLabelBrand value:', settings.whiteLabelBrand);
         
         if (settingsVersion !== currentVersion) {
             console.log(`Migrating settings from v${settingsVersion} to v${currentVersion}`);
-            // Future: Add migration logic here for different versions
         }
         
-        // Ensure all expected fields exist with defaults
-        const validatedSettings = {
+        // Build migrated settings with explicit whiteLabelBrand preservation
+        const migratedSettings = {
             version: currentVersion,
             apiKey: settings.apiKey || '',
-            model: settings.model || 'gemini-2.5-flash',
+            model: settings.model || 'gemini-2.5-flash', 
             supabaseDb: settings.supabaseDb || '',
-            ...settings
+            aiEngine: settings.aiEngine || 'local',
+            whiteLabelBrand: settings.whiteLabelBrand || 'pokpok', // Preserve brand selection
+            lastSettingsTab: settings.lastSettingsTab || 'api',
+            autoAnalyze: settings.autoAnalyze || false,
+            deepAnalysis: settings.deepAnalysis || false,
+            saveHistory: settings.saveHistory || false,
+            // Gemini API 2025 Features Control (v2.42.0+)
+            geminiFeatures: settings.geminiFeatures || {
+                thinkingMode: true,
+                urlContext: true,
+                googleSearch: true,
+                highTemperature: true
+            },
+            // Preserve any other existing settings
+            ...settings,
+            // Ensure critical fields aren't overwritten by spread
+            version: currentVersion,
+            whiteLabelBrand: settings.whiteLabelBrand || 'pokpok',
+            geminiFeatures: settings.geminiFeatures || {
+                thinkingMode: true,
+                urlContext: true,
+                googleSearch: true,
+                highTemperature: true
+            }
         };
         
-        return validatedSettings;
-    }
-
-    // Auto-populate form fields with guaranteed success
-    function autoPopulateFields(settings, retryIfEmpty = true) {
-        try {
-            // Wait for form elements to be ready
-            if (!formElements || !formElements.apiKey) {
-                if (retryIfEmpty) {
-                    console.warn('Form elements not ready, will retry...');
-                    return false;
-                }
-                throw new Error('Form elements not available');
-            }
-            
-            let fieldsPopulated = 0;
-            
-            // Populate API key
-            if (formElements.apiKey && settings.apiKey) {
-                formElements.apiKey.value = settings.apiKey;
-                fieldsPopulated++;
-            }
-            
-            // Populate model selection
-            if (formElements.modelSelect && settings.model) {
-                // Verify the model option exists in the select
-                const option = formElements.modelSelect.querySelector(`option[value="${settings.model}"]`);
-                if (option) {
-                    formElements.modelSelect.value = settings.model;
-                    fieldsPopulated++;
-                } else {
-                    console.warn(`Model ${settings.model} not found in options, using default`);
-                    formElements.modelSelect.value = 'gemini-2.5-flash';
-                }
-            }
-            
-            // Populate Supabase database name
-            if (formElements.supabaseDb && settings.supabaseDb) {
-                formElements.supabaseDb.value = settings.supabaseDb;
-                fieldsPopulated++;
-            }
-            
-            console.log(`Successfully populated ${fieldsPopulated} form fields`);
-            return true;
-            
-        } catch (error) {
-            console.error('Failed to populate form fields:', error);
-            return false;
-        }
-    }
-
-    // Show visual indicator when settings are loaded
-    function showSettingsLoadedIndicator() {
-        showNotification('Settings loaded successfully', 'success');
+        console.log('🔧 Migrated settings keys:', Object.keys(migratedSettings));
+        console.log('🔧 Migrated whiteLabelBrand value:', migratedSettings.whiteLabelBrand);
+        console.log('🔧 Migration completed successfully');
+        
+        return migratedSettings;
     }
 
     // Show loading indicator
@@ -304,8 +226,9 @@ window.Settings = (function() {
         if (loadingIndicator) {
             loadingIndicator.classList.remove('hidden');
         }
-        if (formElements && formElements.form) {
-            formElements.form.classList.add('loading');
+        const settingsForm = document.getElementById('settingsForm');
+        if (settingsForm) {
+            settingsForm.classList.add('loading');
         }
     }
 
@@ -314,9 +237,10 @@ window.Settings = (function() {
         if (loadingIndicator) {
             loadingIndicator.classList.add('hidden');
         }
-        if (formElements && formElements.form) {
-            formElements.form.classList.remove('loading');
-            formElements.form.classList.add('loaded');
+        const settingsForm = document.getElementById('settingsForm');
+        if (settingsForm) {
+            settingsForm.classList.remove('loading');
+            settingsForm.classList.add('loaded');
         }
     }
 
@@ -325,7 +249,7 @@ window.Settings = (function() {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    // Show notification to user
+    // Show notification to user (for other modules to use)
     function showNotification(message, type = 'info') {
         // Create notification element
         const notification = document.createElement('div');
@@ -426,16 +350,14 @@ window.Settings = (function() {
         }
     }
 
-    // Public API
+    // Public API - simplified to orchestration functions
     return {
         initialize: initialize,
         loadSettings: loadSettings,
         ensureSettingsLoaded: ensureSettingsLoaded,
         saveSettings: saveSettings,
-        testGeminiConnection: testGeminiConnection,
-        autoPopulateFields: autoPopulateFields,
         validateAndMigrateSettings: validateAndMigrateSettings,
-        debugSettingsPersistence: debugSettingsPersistence
+        showNotification: showNotification
     };
 })();
 

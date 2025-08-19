@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Brand Switching Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test-container { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .logo-preview { margin: 10px 0; }
+        .dr-logo { width: 24px; height: 24px; margin-right: 8px; vertical-align: middle; }
+        .dr-text { font-weight: 300; font-size: 22px; color: #f6f951; }
+    </style>
+</head>
+<body>
+    <h1>Brand Switching Test</h1>
+    
+    <div class="test-container">
+        <h2>PokPok Brand (Animated Logo)</h2>
+        <div class="logo-preview">
+            <span>[—</span><span class="logo-symbol" id="logoSymbol">*</span><span>—]</span>
+            <span> POKPOK.AI</span>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Dragon Rouge Brand (SVG Logo)</h2>
+        <div class="logo-preview">
+            <img src="logos/dr.svg" class="dr-logo" alt="DR">
+            <span class="dr-text"> Dragon Rouge</span>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Test Result</h2>
+        <p id="result">Testing logos...</p>
+    </div>
+    
+    <script>
+        // Test if DR logo loads
+        const drLogo = document.querySelector('.dr-logo');
+        drLogo.onload = function() {
+            document.getElementById('result').textContent = '✅ DR Logo loaded successfully!';
+        };
+        drLogo.onerror = function() {
+            document.getElementById('result').textContent = '❌ DR Logo failed to load!';
+        };
+    </script>
+</body>
+</html>

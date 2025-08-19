@@ -1,5 +1,45 @@
-// ToneAnalysisDisplay.js - Simple tone analysis slider handling
-// Direct DOM manipulation approach
+/**
+ * POKPOK.AI Chrome Extension v2.25.0
+ * File: js/ToneAnalysisDisplay.js
+ * Purpose: Tone analysis slider display system and UI updates
+ * 
+ * Key Features:
+ * - Nielsen's 4-dimensional tone slider updates
+ * - Direct DOM manipulation for real-time visual feedback
+ * - Tone mapping between analysis engine and UI display
+ * - Score and position label updates
+ * 
+ * Tone Mapping System:
+ * - Analysis: 'Serious vs. Humorous' → UI: 'Serious vs. Funny'
+ * - Analysis: 'Enthusiastic vs. Matter-of-fact' → UI: 'Matter-of-fact vs. Enthusiastic'
+ * - Direct matches: 'Formal vs. Casual', 'Respectful vs. Irreverent'
+ * 
+ * UI Elements Updated:
+ * - .tone-score: Numerical scale display (e.g., "3/5")
+ * - .tone-position: Descriptive label (e.g., "Balanced")
+ * - .slider-indicator: Visual slider position (CSS left property)
+ * 
+ * Dependencies:
+ * - analysis.js: Tone analysis data structure
+ * - basic_analysis.js: Local analysis results
+ * - GeminiAnalysisService.js: Cloud analysis results
+ * 
+ * Exposes:
+ * - updateToneSliders() - Main slider update function (called from analysis.js)
+ * 
+ * Data Structure Expected:
+ * {
+ *   rawScores: { 'Formal vs. Casual': 60 },  // 0-100% for positioning
+ *   tones: { 'Formal vs. Casual': { scale: 3, label: 'Balanced' } }
+ * }
+ * 
+ * Integration Points:
+ * - analysis.js: Receives analysis data and calls updateToneSliders()
+ * - event-handlers.js: Manages tone item click events
+ * - HTML: Direct DOM manipulation of tone UI elements
+ * 
+ * Last Updated: August 2024
+ */
 
 (function() {
     const sliders = {

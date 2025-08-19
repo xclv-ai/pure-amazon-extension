@@ -1,5 +1,46 @@
-// basic_analysis.js - Text analysis using compromise.js (Nielsen Framework)
-// Pure analysis functions - no UI, no DOM manipulation
+/**
+ * POKPOK.AI Chrome Extension v2.25.0
+ * File: js/basic_analysis.js
+ * Purpose: Local text analysis using compromise.js and Nielsen's 4-dimensional framework
+ * 
+ * Key Features:
+ * - Nielsen's 4-dimensional tone analysis (Formal, Serious, Respectful, Enthusiastic)
+ * - Pure analysis functions with no UI dependencies
+ * - Fast offline processing using compromise.js NLP library
+ * - Consistent data structure output compatible with UI sliders
+ * 
+ * Dependencies:
+ * - lib/compromise.min.js (loaded globally)
+ * 
+ * Exposes:
+ * - window.BasicAnalysis.analyzeText() - Main analysis function
+ * 
+ * Analysis Dimensions:
+ * - Formal vs. Casual: Professional tone assessment (0-100%)
+ * - Serious vs. Funny: Humor detection and measurement
+ * - Respectful vs. Irreverent: Respect level analysis  
+ * - Matter-of-fact vs. Enthusiastic: Energy and enthusiasm detection
+ * 
+ * Data Structure Output:
+ * {
+ *   rawScores: {
+ *     'Formal vs. Casual': 60,              // 0-100% for slider positioning
+ *     'Serious vs. Humorous': 20,           // Maps to "Serious vs. Funny" in UI
+ *     'Respectful vs. Irreverent': 80,
+ *     'Enthusiastic vs. Matter-of-fact': 40 // Maps to "Matter-of-fact vs. Enthusiastic"
+ *   },
+ *   tones: {
+ *     'Formal vs. Casual': { scale: 3, label: 'Balanced' }
+ *   }
+ * }
+ * 
+ * Integration Points:
+ * - analysis.js: Called for local analysis mode
+ * - ToneAnalysisDisplay.js: Provides data for UI slider updates
+ * - Compromise.js: Natural language processing engine
+ * 
+ * Last Updated: August 2024
+ */
 
 (function() {
     // Convert percentage score to 1-5 scale and position label

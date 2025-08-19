@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "POKPOK.AI - Tone Analysis v2.7.1",
-  "version": "2.7.1",
+  "name": "POKPOK.AI - Tone Analysis v2.53.0",
+  "version": "2.53.0",
   "description": "Advanced brand voice analysis using Nielsen's 4-dimensional framework. Analyze webpage content with comprehensive linguistic insights.",
   
   "icons": {
@@ -23,7 +23,9 @@
   ],
 
   "host_permissions": [
-    "*://*/*"
+    "*://*/*",
+    "https://www.googleapis.com/*",
+    "https://oauth2.googleapis.com/*"
   ],
 
   "action": {
@@ -55,7 +57,10 @@
         "analysis-simple.html",
         "analysis.js",
         "lib/compromise.min.js",
-        "styles/*"
+        "js/*",
+        "prompts/*",
+        "styles/*",
+        "logos/*"
       ],
       "matches": ["*://*/*"]
     }

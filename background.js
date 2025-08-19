@@ -1,5 +1,32 @@
-// Chrome Extension Background Service Worker for POKPOK.AI
-// MINIMAL VERSION - NO BROKEN FUNCTIONALITY
+/**
+ * POKPOK.AI Chrome Extension v2.25.0
+ * File: background.js
+ * Purpose: Chrome extension background service worker (Manifest V3)
+ * 
+ * Key Features:
+ * - Side panel activation and management
+ * - Extension lifecycle management
+ * - Background task coordination
+ * - Minimal and stable implementation
+ * 
+ * Chrome APIs Used:
+ * - chrome.runtime.onInstalled: Extension installation handling
+ * - chrome.sidePanel.setPanelBehavior: Side panel configuration
+ * - chrome.action.onClicked: Extension icon click handling
+ * - chrome.sidePanel.open: Side panel opening
+ * 
+ * Service Worker Pattern:
+ * - Event-driven architecture (no persistent background)
+ * - Lightweight and efficient resource usage
+ * - Manifest V3 compliant implementation
+ * 
+ * Integration Points:
+ * - analysis-simple.html: Main extension interface
+ * - Content scripts: Page interaction capabilities
+ * - Storage API: Settings persistence
+ * 
+ * Last Updated: August 2024
+ */
 
 // Enable side panel on extension installation
 chrome.runtime.onInstalled.addListener(() => {
